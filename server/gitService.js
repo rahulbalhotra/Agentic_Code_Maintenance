@@ -7,6 +7,29 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, '../workspace');
 
+export function ensureGitRepo(repoName = 'fb_clone_repo') {
+  const repoPath = path.join(workspaceRoot, repoName);
+  const gitDir = path.join(repoPath, '.git');
+  if (fs.existsSync(repoPath) && !fs.existsSync(gitDir)) {
+    const bundlePath = path.join(workspaceRoot, `${repoName}.bundle`);
+    if (fs.existsSync(bundlePath)) {
+      try {
+        const tempPath = path.join(workspaceRoot, `temp_bundle_${Date.now()}`);
+        execSync(`git clone "${bundlePath}" "${tempPath}"`, { stdio: 'ignore' });
+        if (fs.existsSync(path.join(tempPath, '.git'))) {
+          fs.renameSync(path.join(tempPath, '.git'), gitDir);
+          fs.rmSync(tempPath, { recursive: true, force: true });
+        }
+      } catch (e) {}
+    }
+    if (!fs.existsSync(gitDir)) {
+      try {
+        execSync('git init && git add . && git commit -m "Initial skeleton for fb_clone_repo"', { cwd: repoPath, stdio: 'ignore' });
+      } catch (e) {}
+    }
+  }
+}
+
 export function getWorkspaceRepos() {
   if (!fs.existsSync(workspaceRoot)) return [];
   const entries = fs.readdirSync(workspaceRoot, { withFileTypes: true });
@@ -14,6 +37,7 @@ export function getWorkspaceRepos() {
 
   for (const entry of entries) {
     if (entry.isDirectory()) {
+      ensureGitRepo(entry.name);
       const repoPath = path.join(workspaceRoot, entry.name);
       const isGit = fs.existsSync(path.join(repoPath, '.git'));
       let branch = 'main';
@@ -40,6 +64,7 @@ export function getWorkspaceRepos() {
 }
 
 export function getRepoCommits(repoName = 'fb_clone_repo') {
+  ensureGitRepo(repoName);
   const repoPath = path.join(workspaceRoot, repoName);
   if (!fs.existsSync(repoPath) || !fs.existsSync(path.join(repoPath, '.git'))) {
     return [];
@@ -120,6 +145,7 @@ export function getFileContent(repoName = 'fb_clone_repo', filePath, ref = null)
 }
 
 export function getRepoDiff(repoName = 'fb_clone_repo', baseRef = null, targetRef = null, targetFile = null) {
+  ensureGitRepo(repoName);
   const repoPath = path.join(workspaceRoot, repoName);
   if (!fs.existsSync(repoPath) || !fs.existsSync(path.join(repoPath, '.git'))) {
     return { files: [], summary: { additions: 0, deletions: 0, changedFiles: 0 } };

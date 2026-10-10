@@ -2,12 +2,8 @@
 node_modules/
 */node_modules/
 
-# Environment and Secrets
-.env
-.env.*
-*.env
-agent_backend/.env
-server/.env
+# Environment and Secrets (exclude specific secrets if needed, allow repo templates)
+*.env.local
 
 # Python
 __pycache__/
@@ -44,9 +40,11 @@ client/dist/
 dist-ssr/
 *.local
 
-# Workspace repositories (dynamically cloned / local test repos)
-workspace/*
-!workspace/.gitkeep
+# Workspace repositories
+workspace/**/.git/
+!workspace/fb_clone_repo/
+!workspace/fb_clone_repo/**
+!workspace/fb_clone_repo.bundle
 
 # Logs
 logs/

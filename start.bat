@@ -45,6 +45,30 @@ if not exist "client\node_modules" (
     call npm --prefix client install
 )
 
+:: 4. Verify workspace target git repository
+if exist "workspace\fb_clone_repo" (
+    if not exist "workspace\fb_clone_repo\.git" (
+        if exist "workspace\fb_clone_repo.bundle" (
+            echo [INFO] Restoring workspace\fb_clone_repo git history from bundle...
+            git clone "workspace\fb_clone_repo.bundle" "workspace\temp_fb_repo" >nul 2>&1
+            if exist "workspace\temp_fb_repo\.git" (
+                move "workspace\temp_fb_repo\.git" "workspace\fb_clone_repo\.git" >nul 2>&1
+                rd /s /q "workspace\temp_fb_repo" >nul 2>&1
+            )
+        )
+        if not exist "workspace\fb_clone_repo\.git" (
+            echo [INFO] Initializing git in workspace\fb_clone_repo...
+            pushd workspace\fb_clone_repo
+            git init -b main >nul 2>&1
+            git config user.name "Alex Morgan"
+            git config user.email "alex@autojira.io"
+            git add . >nul 2>&1
+            git commit -m "Initial skeleton for fb_clone_repo" >nul 2>&1
+            popd
+        )
+    )
+)
+
 :: Check for separate window mode (--split or -s)
 if "%1"=="--split" goto split_mode
 if "%1"=="-s" goto split_mode

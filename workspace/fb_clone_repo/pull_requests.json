@@ -1,0 +1,83 @@
+[
+  {
+    "id": "PR-4",
+    "number": 4,
+    "title": "feat(kb-kb-kb-kb-kb-kb-kb-kb-kb-kb-fb-105): KB-KB-KB-KB-KB-KB-KB-KB-KB-KB-FB-105 Architecture & Progress: Threaded Comments and Timeline Share Handler",
+    "description": "Applied responsive styling and scoped feature class for KB-KB-KB-KB-KB-KB-KB-KB-KB-KB-FB-105.",
+    "status": "OPEN",
+    "branch": "feature/kb-kb-kb-kb-kb-kb-kb-kb-kb-kb-fb-105-agent-patch",
+    "base": "main",
+    "author": "langgraph-agent",
+    "authorAvatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=80&h=80&fit=crop",
+    "linkedIssue": "KB-KB-KB-KB-KB-KB-KB-KB-KB-KB-FB-105",
+    "commits": 1,
+    "changedFiles": [
+      "styles.css"
+    ],
+    "createdAt": "2026-10-10T21:38:07.074897",
+    "mergedAt": null
+  },
+  {
+    "id": "PR-3",
+    "number": 3,
+    "title": "feat(kb-kb-kb-kb-kb-kb-kb-kb-kb-fb-new): KB-KB-KB-KB-KB-KB-KB-KB-KB-FB-NEW Architecture & Progress: REJECTED_NEEDS_INFO Protocol & Requirement Guidelines",
+    "description": "1. Documented the full REJECTED_NEEDS_INFO protocol, triage rejection criteria, operational standards, and design token badge rules in README.md.\n2. Implemented normalizeTicketStatus, getStatusBadgeConfig, renderStatusBadge, and escapeHTML functions in app.js supporting the canonical REJECTED_NEEDS_INFO status alongside existing canonical statuses.\n3. Updated pull_requests.json to reflect valid JSON structure and issue links.",
+    "status": "OPEN",
+    "branch": "feature/kb-kb-kb-kb-kb-kb-kb-kb-kb-fb-new-agent-patch",
+    "base": "main",
+    "author": "langgraph-agent",
+    "authorAvatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=80&h=80&fit=crop",
+    "linkedIssue": "KB-KB-KB-KB-KB-KB-KB-KB-KB-FB-NEW",
+    "commits": 1,
+    "changedFiles": [
+      "README.md",
+      "app.js",
+      "pull_requests.json"
+    ],
+    "createdAt": "2026-10-10T21:37:45.158115",
+    "mergedAt": null
+  },
+  {
+    "id": "PR-6",
+    "number": 6,
+    "title": "feat(fb-new): FB-NEW Untitled Ticket",
+    "description": "Audited the repository baseline to verify structure and complete interactive logic in app.js. Verified escapeHTML sanitization, ticket status normalization for REJECTED_NEEDS_INFO, getStatusBadgeConfig mapping, theme toggling, search input handling, and tab navigation.",
+    "status": "OPEN",
+    "branch": "feature/fb-new-agent-patch",
+    "base": "main",
+    "author": "langgraph-agent",
+    "authorAvatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=80&h=80&fit=crop",
+    "linkedIssue": "FB-NEW",
+    "ticketStatus": "REJECTED_NEEDS_INFO",
+    "commits": 5,
+    "changedFiles": [
+      "README.md",
+      "pull_requests.json",
+      "index.html",
+      "styles.css",
+      "app.js"
+    ],
+    "createdAt": "2026-10-10T21:29:14.599494",
+    "mergedAt": null
+  },
+  {
+    "id": "PR-5",
+    "number": 5,
+    "title": "feat(fb-105): FB-105 Architecture & Progress: Threaded Comments and Timeline Share Handler",
+    "description": "Implemented hierarchical threaded comment state management with depth limit.",
+    "status": "MERGED",
+    "branch": "feature/fb-105-threaded-comments",
+    "base": "main",
+    "author": "langgraph-agent",
+    "authorAvatar": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=80&h=80&fit=crop",
+    "linkedIssue": "FB-105",
+    "commits": 1,
+    "changedFiles": [
+      "README.md",
+      "app.js",
+      "pull_requests.json"
+    ],
+    "createdAt": "2026-10-10T20:15:00.000000",
+    "mergedAt": "2026-10-10T20:30:00.000000"
+  }
+]

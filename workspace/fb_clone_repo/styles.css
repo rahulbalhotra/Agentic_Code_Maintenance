@@ -1,0 +1,389 @@
+/* Facebook Clone CSS Stylesheet */
+:root {
+  --fb-primary: #0866FF;
+  --fb-primary-hover: #0056DF;
+  --fb-bg: #F0F2F5;
+  --fb-surface: #FFFFFF;
+  --fb-surface-secondary: #F0F2F5;
+  --fb-surface-hover: #E4E6EB;
+  --fb-text: #050505;
+  --fb-text-muted: #65676B;
+  --fb-border: #CED0D4;
+  --fb-border-subtle: #E4E6EB;
+  --fb-nav-height: 56px;
+  --fb-radius: 8px;
+  --fb-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --fb-shadow-lg: 0 12px 28px 0 rgba(0, 0, 0, 0.2), 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  --indent-step: 24px;
+
+  /* Status Badge Tokens */
+  --status-todo-bg: #E4E6EB;
+  --status-todo-text: #4B4C4F;
+  --status-in-progress-bg: #E7F3FF;
+  --status-in-progress-text: #1877F2;
+  --status-in-review-bg: #F3E8FF;
+  --status-in-review-text: #8B5CF6;
+  --status-done-bg: #E6F4EA;
+  --status-done-text: #137333;
+  --status-rejected-bg: #FFEBE9;
+  --status-rejected-text: #D9381E;
+  --status-needs-info-bg: #FFF8E6;
+  --status-needs-info-text: #B76E00;
+}
+
+[data-theme="dark"] {
+  --fb-primary: #2D88FF;
+  --fb-primary-hover: #3B91FF;
+  --fb-bg: #18191A;
+  --fb-surface: #242526;
+  --fb-surface-secondary: #3A3B3C;
+  --fb-surface-hover: #3A3B3C;
+  --fb-text: #E4E6EB;
+  --fb-text-muted: #B0B3B8;
+  --fb-border: #3E4042;
+  --fb-border-subtle: #2F3031;
+
+  --status-todo-bg: #3A3B3C;
+  --status-todo-text: #B0B3B8;
+  --status-in-progress-bg: #263951;
+  --status-in-progress-text: #4599FF;
+  --status-in-review-bg: #372A4E;
+  --status-in-review-text: #A78BFA;
+  --status-done-bg: #1C3829;
+  --status-done-text: #34D399;
+  --status-rejected-bg: #442222;
+  --status-rejected-text: #F87171;
+  --status-needs-info-bg: #423218;
+  --status-needs-info-text: #FBBF24;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+  background-color: var(--fb-bg);
+  color: var(--fb-text);
+  line-height: 1.34;
+  min-height: 100vh;
+}
+
+/* Header Navigation */
+.fb-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fb-nav-height);
+  background-color: var(--fb-surface);
+  border-bottom: 1px solid var(--fb-border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 1000;
+  box-shadow: var(--fb-shadow);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 280px;
+}
+
+.fb-logo {
+  width: 40px;
+  height: 40px;
+  background-color: var(--fb-primary);
+  color: #FFFFFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background-color: var(--fb-surface-secondary);
+  border-radius: 50px;
+  padding: 8px 12px;
+  gap: 8px;
+  width: 100%;
+}
+
+.search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--fb-text);
+  font-size: 14px;
+  width: 100%;
+}
+
+.nav-center {
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  flex: 1;
+  max-width: 680px;
+}
+
+.nav-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 0 32px;
+  height: 100%;
+  cursor: pointer;
+  color: var(--fb-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.nav-tab:hover {
+  background-color: var(--fb-surface-hover);
+  border-radius: var(--fb-radius);
+}
+
+.nav-tab.active {
+  color: var(--fb-primary);
+  border-bottom-color: var(--fb-primary);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 280px;
+  justify-content: flex-end;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--fb-surface-secondary);
+  color: var(--fb-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.icon-btn:hover {
+  background-color: var(--fb-surface-hover);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--fb-primary);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Layout Container */
+.fb-container {
+  display: flex;
+  margin-top: var(--fb-nav-height);
+  padding: 16px;
+  gap: 16px;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sidebar-left, .sidebar-right {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.sidebar-menu {
+  list-style: none;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--fb-radius);
+  cursor: pointer;
+  color: var(--fb-text);
+  font-weight: 500;
+}
+
+.menu-item:hover, .menu-item.active {
+  background-color: var(--fb-surface-hover);
+}
+
+.main-content {
+  flex: 1;
+  max-width: 680px;
+}
+
+/* Views and Cards */
+.tab-view {
+  display: none;
+}
+
+.tab-view.active {
+  display: block;
+}
+
+.create-post-card, .widget-card, .profile-card, .post-card, .ticket-card {
+  background-color: var(--fb-surface);
+  border-radius: var(--fb-radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--fb-shadow);
+}
+
+.create-post-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.create-post-top input {
+  flex: 1;
+  background-color: var(--fb-surface-secondary);
+  border: none;
+  border-radius: 20px;
+  padding: 10px 16px;
+  color: var(--fb-text);
+  outline: none;
+}
+
+.create-post-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--fb-border-subtle);
+}
+
+.post-btn {
+  background-color: var(--fb-primary);
+  color: #FFFFFF;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.post-btn:hover {
+  background-color: var(--fb-primary-hover);
+}
+
+.tickets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.filter-controls select {
+  padding: 6px 12px;
+  border-radius: var(--fb-radius);
+  background-color: var(--fb-surface);
+  color: var(--fb-text);
+  border: 1px solid var(--fb-border);
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ticket-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ticket-id {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fb-text-muted);
+}
+
+.ticket-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.ticket-desc {
+  font-size: 14px;
+  color: var(--fb-text-muted);
+  line-height: 1.4;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #34D399;
+}
+
+/* Responsive Rules */
+@media (max-width: 992px) {
+  .sidebar-right {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-left {
+    display: none;
+  }
+  .nav-tab {
+    padding: 0 16px;
+  }
+  .search-box input {
+    display: none;
+  }
+}
+
+/* Feature: KB-KB-KB-KB-KB-KB-KB-KB-KB-KB-FB-105 - Architecture & Progress: Threaded Comments and Timeline Share Handler */
+.jira-ticket-kb-kb-kb-kb-kb-kb-kb-kb-kb-kb-fb-105 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--fb-radius);
+  transition: all 0.2s ease;
+}
