@@ -7,7 +7,10 @@ import {
   RotateCcw, 
   Columns3, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Sparkles,
+  Cpu,
+  MessageSquare
 } from 'lucide-react';
 
 export default function Navbar({
@@ -15,6 +18,7 @@ export default function Navbar({
   onOpenCreateModal,
   onOpenConnectModal,
   onOpenConfigModal,
+  onOpenModelModal,
   onSeedData,
   activeView,
   setActiveView,
@@ -66,6 +70,15 @@ export default function Navbar({
             Kanban
           </button>
           <button
+            className={activeView === 'chat' ? 'btn-dark-blue' : 'btn-secondary'}
+            style={{ padding: '6px 11px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+            onClick={() => setActiveView('chat')}
+            id="view-toggle-chat"
+          >
+            <Sparkles size={14} />
+            Knowledge Chat
+          </button>
+          <button
             className={activeView === 'graph' ? 'btn-dark-blue' : 'btn-secondary'}
             style={{ padding: '6px 11px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}
             onClick={() => setActiveView('graph')}
@@ -102,6 +115,18 @@ export default function Navbar({
             Knowledge Base
           </button>
         </div>
+
+        {/* AI Model Settings Button */}
+        <button
+          className="btn-secondary"
+          onClick={onOpenModelModal}
+          title="Configure LLM Model Provider (Azure OpenAI / Gemini)"
+          id="btn-navbar-model-settings"
+          style={{ padding: '6px 10px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          <Cpu size={14} />
+          <span>Model Settings</span>
+        </button>
 
         {/* Dark Blue Action Buttons */}
         <button

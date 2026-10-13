@@ -10,10 +10,7 @@ const AZURE_DEPLOYMENT_PRESETS = [
 ];
 
 const GEMINI_MODEL_PRESETS = [
-  { id: 'gemini-2.5-flash', label: 'gemini-2.5-flash (Balanced & Fast)' },
-  { id: 'gemini-2.5-pro', label: 'gemini-2.5-pro (High Reasoning)' },
-  { id: 'gemini-1.5-pro', label: 'gemini-1.5-pro (Legacy Pro)' },
-  { id: 'gemini-1.5-flash', label: 'gemini-1.5-flash (Legacy Flash)' }
+  { id: 'gemini-3.6-flash', label: 'gemini-3.6-flash' }
 ];
 
 export default function ModelSettingsModal({
@@ -23,7 +20,7 @@ export default function ModelSettingsModal({
 }) {
   const [provider, setProvider] = useState('azure');
   const [geminiKey, setGeminiKey] = useState('');
-  const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash');
+  const [geminiModel, setGeminiModel] = useState('gemini-3.6-flash');
   const [azureKey, setAzureKey] = useState('');
   const [azureEndpoint, setAzureEndpoint] = useState('');
   const [azureDeployment, setAzureDeployment] = useState('gpt-4o');
@@ -58,7 +55,7 @@ export default function ModelSettingsModal({
           setMaskedAzureKey(data.azure.masked_key || '');
         }
         if (data.gemini) {
-          setGeminiModel(data.gemini.model || 'gemini-2.5-flash');
+          setGeminiModel(data.gemini.model || 'gemini-3.6-flash');
           setMaskedGeminiKey(data.gemini.masked_key || '');
         }
       }
@@ -123,8 +120,8 @@ export default function ModelSettingsModal({
 
   return (
     <div className="modal-overlay" onClick={onClose} id="llm-settings-backdrop">
-      <div 
-        className="modal-content" 
+      <div
+        className="modal-content"
         style={{ maxWidth: '620px', width: '92%' }}
         onClick={(e) => e.stopPropagation()}
         id="llm-settings-modal"

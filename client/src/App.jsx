@@ -5,9 +5,11 @@ import GraphVisualizer from './components/GraphVisualizer.jsx';
 import AgentPipelineView from './components/AgentPipelineView.jsx';
 import KnowledgeBaseView from './components/KnowledgeBaseView.jsx';
 import RepoDiffView from './components/RepoDiffView.jsx';
+import KnowledgeChatView from './components/KnowledgeChatView.jsx';
 import IssueModal from './components/IssueModal.jsx';
 import ConnectModal from './components/ConnectModal.jsx';
 import Neo4jSettingsModal from './components/Neo4jSettingsModal.jsx';
+import ModelSettingsModal from './components/ModelSettingsModal.jsx';
 import {
   fetchGraph,
   fetchStatus,
@@ -25,7 +27,7 @@ export default function App() {
   const [connections, setConnections] = useState([]);
   const [knowledgeDocs, setKnowledgeDocs] = useState([]);
   const [neo4jStatus, setNeo4jStatus] = useState(null);
-  const [activeView, setActiveView] = useState('kanban'); // 'kanban' | 'kb' | 'repo' | 'graph'
+  const [activeView, setActiveView] = useState('kanban'); // 'kanban' | 'chat' | 'kb' | 'repo' | 'graph' | 'agents'
   const [loading, setLoading] = useState(true);
 
   // Modals state
@@ -38,6 +40,7 @@ export default function App() {
   const [connectSourceId, setConnectSourceId] = useState(null);
 
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
 
   // Toast notifications
   const [toasts, setToasts] = useState([]);
@@ -201,6 +204,7 @@ export default function App() {
         onOpenCreateModal={() => handleOpenCreateModal('TODO')}
         onOpenConnectModal={() => handleOpenQuickConnect(null)}
         onOpenConfigModal={() => setIsConfigModalOpen(true)}
+        onOpenModelModal={() => setIsModelModalOpen(true)}
         onSeedData={handleSeedData}
       />
 
@@ -214,6 +218,14 @@ export default function App() {
           onUpdateStatus={handleUpdateStatus}
           onOpenCreateModalWithStatus={handleOpenCreateModal}
           onOpenQuickConnect={handleOpenQuickConnect}
+        />
+      )}
+
+      {activeView === 'chat' && (
+        <KnowledgeChatView
+          onSelectIssue={handleSelectIssue}
+          onOpenModelModal={() => setIsModelModalOpen(true)}
+          neo4jStatus={neo4jStatus}
         />
       )}
 
@@ -281,6 +293,14 @@ export default function App() {
           setNeo4jStatus(res.currentStatus);
           addToast('Neo4j connection configuration updated', 'info');
           loadData();
+        }}
+      />
+
+      <ModelSettingsModal
+        isOpen={isModelModalOpen}
+        onClose={() => setIsModelModalOpen(false)}
+        onModelChanged={(res) => {
+          addToast(`Active Model Provider updated to ${res.active_provider === 'azure' ? 'Azure OpenAI' : 'Google Gemini'}`, 'success');
         }}
       />
 

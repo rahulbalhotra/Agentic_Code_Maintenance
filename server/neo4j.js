@@ -885,15 +885,15 @@ Every commit strictly references its associated Jira ticket:
     }
   ];
 
-  // 4. Commits from git log
+  // 4. Commits from git log with authors and timestamps
   const commits = [
-    { id: 'commit-795534c', hash: '795534c', message: 'FB-101: Initial repository structure and architecture blueprint', linkedIssueKey: 'FB-101' },
-    { id: 'commit-4ba2a47', hash: '4ba2a47', message: 'FB-102: Setup Facebook clone skeleton, navigation, and sidebar layout', linkedIssueKey: 'FB-102' },
-    { id: 'commit-002ec12', hash: '002ec12', message: 'FB-103: Implement Story Tray and News Feed post creator card', linkedIssueKey: 'FB-103' },
-    { id: 'commit-8c56a2f', hash: '8c56a2f', message: 'FB-104: Add multi-reaction picker (Like, Love, Care, Haha) with real-time counters', linkedIssueKey: 'FB-104' },
-    { id: 'commit-c3d5a5c', hash: 'c3d5a5c', message: 'FB-105: Implement nested comments threading and share handler', linkedIssueKey: 'FB-105' },
-    { id: 'commit-7f1e37f', hash: '7f1e37f', message: 'FB-106: Add Messenger contacts sidebar and floating chat window', linkedIssueKey: 'FB-106' },
-    { id: 'commit-dd19bac', hash: 'dd19bac', message: 'FB-107: Responsive layout fixes for mobile viewports and media previews', linkedIssueKey: 'FB-107' }
+    { id: 'commit-795534c', hash: '795534c', author: 'Alex Morgan', message: 'FB-101: Initial repository structure and architecture blueprint', linkedIssueKey: 'FB-101', createdAt: '2025-01-14T09:30:00Z', nodeLabel: 'Commit' },
+    { id: 'commit-4ba2a47', hash: '4ba2a47', author: 'Alex Morgan', message: 'FB-102: Setup Facebook clone skeleton, navigation, and sidebar layout', linkedIssueKey: 'FB-102', createdAt: '2025-01-14T11:45:00Z', nodeLabel: 'Commit' },
+    { id: 'commit-002ec12', hash: '002ec12', author: 'Alex Morgan', message: 'FB-103: Implement Story Tray and News Feed post creator card', linkedIssueKey: 'FB-103', createdAt: '2025-01-15T14:20:00Z', nodeLabel: 'Commit' },
+    { id: 'commit-8c56a2f', hash: '8c56a2f', author: 'Sarah Connor', message: 'FB-104: Add multi-reaction picker (Like, Love, Care, Haha) with real-time counters', linkedIssueKey: 'FB-104', createdAt: '2025-01-15T16:10:00Z', nodeLabel: 'Commit' },
+    { id: 'commit-c3d5a5c', hash: 'c3d5a5c', author: 'David Kim', message: 'FB-105: Implement nested comments threading and share handler', linkedIssueKey: 'FB-105', createdAt: '2025-01-16T10:05:00Z', nodeLabel: 'Commit' },
+    { id: 'commit-7f1e37f', hash: '7f1e37f', author: 'Elena Rostova', message: 'FB-106: Add Messenger contacts sidebar and floating chat window', linkedIssueKey: 'FB-106', createdAt: '2025-01-16T15:30:00Z', nodeLabel: 'Commit' },
+    { id: 'commit-dd19bac', hash: 'dd19bac', author: 'Alex Morgan', message: 'FB-107: Responsive layout fixes for mobile viewports and media previews', linkedIssueKey: 'FB-107', createdAt: '2025-01-17T12:00:00Z', nodeLabel: 'Commit' }
   ];
 
   // Insert Issues
@@ -930,7 +930,9 @@ Every commit strictly references its associated Jira ticket:
           MERGE (c:Commit { id: $id })
           SET c += {
             hash: $hash,
+            author: $author,
             message: $message,
+            createdAt: $createdAt,
             linkedIssueKey: $linkedIssueKey,
             nodeLabel: 'Commit'
           }
@@ -990,5 +992,33 @@ export async function populateSampleData() {
   return await seedFbCloneProject();
 }
 
-// Initial connection attempt on module load
-initDriver().catch(() => {});
+export function getDriver() {
+  return driver;
+}
+
+export function getIsConnected() {
+  return isConnected;
+}
+
+export function getMemoryGraph() {
+  return {
+    issues: memoryIssues,
+    relations: memoryRelations,
+    docs: memoryDocs,
+    prs: memoryPRs,
+    commits: memoryCommits
+  };
+}
+
+// Initial connection attempt & bootstrap seed
+initDriver()
+  .then(() => {
+    if (memoryIssues.length === 0) {
+      seedFbCloneProject().catch(() => {});
+    }
+  })
+  .catch(() => {
+    if (memoryIssues.length === 0) {
+      seedFbCloneProject().catch(() => {});
+    }
+  });

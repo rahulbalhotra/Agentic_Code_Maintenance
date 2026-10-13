@@ -29,6 +29,16 @@ import {
   getFileContent,
   getRepoDiff
 } from './gitService.js';
+import {
+  getLLMConfig,
+  updateLLMConfig,
+  testLLMConnection
+} from './llmService.js';
+import {
+  GRAPH_SCHEMA,
+  executeCypher,
+  processGraphChat
+} from './cypherEngine.js';
 
 import dotenv from 'dotenv';
 
@@ -46,6 +56,66 @@ const PORT = process.env.SERVER_PORT || process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+
+// ==========================================
+// LLM Configuration & Connection Test Routes
+// ==========================================
+app.get('/api/llm/config', (req, res) => {
+  res.json(getLLMConfig());
+});
+
+app.post('/api/llm/config', async (req, res) => {
+  try {
+    const updated = await updateLLMConfig(req.body);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/llm/test', async (req, res) => {
+  try {
+    const provider = req.body.provider;
+    const result = await testLLMConnection(provider, req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ========================================================
+// Knowledge Graph Chat Assistant (Text-to-Cypher) Routes
+// ========================================================
+app.get('/api/chat/schema', (req, res) => {
+  res.json(GRAPH_SCHEMA);
+});
+
+app.post('/api/chat/cypher', async (req, res) => {
+  try {
+    const { prompt, history } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+    const result = await processGraphChat({ prompt, history });
+    res.json(result);
+  } catch (err) {
+    console.error('[API] /api/chat/cypher error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/chat/execute-cypher', async (req, res) => {
+  try {
+    const { cypher, params } = req.body;
+    if (!cypher) {
+      return res.status(400).json({ error: 'Cypher query is required' });
+    }
+    const result = await executeCypher(cypher, params || {});
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Serve Facebook clone repo static preview
 if (fs.existsSync(workspaceRepoPath)) {

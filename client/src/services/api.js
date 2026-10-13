@@ -181,5 +181,71 @@ export async function fetchAgentHealth() {
   return res.json();
 }
 
+// ==========================================
+// LLM Model Config & Azure OpenAI APIs
+// ==========================================
+export async function fetchLLMConfig() {
+  const res = await fetch(`${BASE_URL}/llm/config`);
+  if (!res.ok) throw new Error('Failed to fetch LLM configuration');
+  return res.json();
+}
+
+export async function updateLLMConfig(config) {
+  const res = await fetch(`${BASE_URL}/llm/config`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to update LLM configuration');
+  }
+  return res.json();
+}
+
+export async function testLLMConnection(provider, config = {}) {
+  const res = await fetch(`${BASE_URL}/llm/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider, ...config })
+  });
+  return res.json();
+}
+
+// ===================================================
+// Knowledge Graph Chat Assistant (Text-to-Cypher) APIs
+// ===================================================
+export async function fetchGraphSchema() {
+  const res = await fetch(`${BASE_URL}/chat/schema`);
+  if (!res.ok) throw new Error('Failed to fetch graph schema');
+  return res.json();
+}
+
+export async function sendGraphChatMessage({ prompt, history = [] }) {
+  const res = await fetch(`${BASE_URL}/chat/cypher`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, history })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to process graph query');
+  }
+  return res.json();
+}
+
+export async function executeDirectCypher(cypher, params = {}) {
+  const res = await fetch(`${BASE_URL}/chat/execute-cypher`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cypher, params })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to execute Cypher query');
+  }
+  return res.json();
+}
+
 
 

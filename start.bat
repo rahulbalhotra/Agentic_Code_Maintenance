@@ -18,10 +18,24 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-:: 2. Check if setup is needed
+:: 2. Check if setup script exists
+if not exist "scripts\setup.js" (
+    echo [ERROR] scripts\setup.js was not found in: %CD%
+    echo Please ensure you are running start.bat from the root project folder (e.g. d:\Auto-Jira-Agent).
+    pause
+    exit /b 1
+)
+
+:: 3. Check if setup is needed
 if not exist "node_modules" (
     echo [INFO] Running initial cross-platform setup...
+    call npm install
     call node scripts/setup.js
+    if %ERRORLEVEL% neq 0 (
+        echo [ERROR] Setup script failed.
+        pause
+        exit /b 1
+    )
 ) else if not exist "server\node_modules" (
     echo [INFO] Installing server dependencies...
     call node scripts/setup.js
