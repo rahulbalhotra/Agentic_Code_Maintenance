@@ -1,6 +1,20 @@
-# Jira Graph Agent - Autonomous Multi-Agent Engineering System with Neo4j Desktop
+# Jira Graph Agent - Autonomous Multi-Agent Engineering System with Neo4j
 
-A full-stack, enterprise-grade Autonomous Jira Agent system connected directly with a local **Neo4j Desktop Graph Database** and powered by a **5-Agent LangGraph Orchestration Pipeline**.
+A full-stack, enterprise-grade Autonomous Jira Agent system connected directly with a local **Neo4j Graph Database** and powered by an **Adaptive Dynamic LangGraph Multi-Agent Orchestration Pipeline**.
+
+---
+
+## Component Port Architecture
+
+Each component operates on a dedicated, non-conflicting port:
+
+| Component | Default Port | Protocol | Config Variable | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Vite React UI** | `5173` | HTTP | `CLIENT_PORT` / `VITE_CLIENT_PORT` | Frontend Jira Kanban, Flowchart & Diff View |
+| **Express API Server** | `4000` | HTTP / REST | `SERVER_PORT` / `PORT` | Kanban CRUD, Git service, Knowledge Base |
+| **Python Agent Backend** | `8000` | HTTP / SSE | `AGENT_PORT` | FastAPI + LangGraph Dynamic Multi-Agent Engine |
+| **Neo4j Graph Database** | `7687` | Bolt | `NEO4J_URI` | Issue nodes & Cypher relationship graph |
+| **Neo4j Browser** | `7474` | HTTP | `NEO4J_HTTP_PORT` | Local Neo4j Desktop database web explorer |
 
 ---
 
@@ -11,7 +25,7 @@ A full-stack, enterprise-grade Autonomous Jira Agent system connected directly w
                       |       Neo4j Desktop Database          |
                       |        bolt://localhost:7687          |
                       |  (:Issue) -[:BLOCKS]-> (:Issue)      |
-                      |  (:Doc)   -[:DOCUMENTS]-> (:Issue)    |
+                      |  (:Doc)   -[:DOCUMENTED_IN]-> (:Issue)|
                       +-------------------+-------------------+
                                           |
                         Cypher Queries    |  Bolt Protocol
@@ -29,16 +43,16 @@ A full-stack, enterprise-grade Autonomous Jira Agent system connected directly w
 +---------------------+------------------+  +---------------+---------------------+
 |        Vite React UI (Port 5173)       |  |  FastAPI Multi-Agent Backend (8000) |
 |  - Jira Kanban Board (White & Blue)    |  |  - Watchdog Stream Poller           |
-|  - Neo4j Interactive Graph Visualizer  |  |  - LangGraph 5-Agent Pipeline:      |
-|  - Autonomous Agents Live Flowchart    |  |     1. Vigilant Agent               |
-|  - GitHub-style PR & Code Diff Viewer  |  |     2. Planner Agent                |
-|  - Knowledge Base Architecture Docs    |  |     3. Researcher Agent             |
+|  - Neo4j Interactive Graph Visualizer  |  |  - LangGraph Dynamic Pipeline:      |
+|  - Adaptive Dynamic Agent Flowchart    |  |     1. Vigilant Monitor             |
+|  - GitHub-style PR & Code Diff Viewer  |  |     2. Planner Agent (Scope router) |
+|  - Knowledge Base Architecture Docs    |  |     3. Researcher Agent (Optional)  |
 +----------------------------------------+  |     4. Coder Agent                  |
                                             |     5. Test & Auditor Agent         |
-                                            |  - Workspace Git Auto-Commit & PR   |
+                                            |     6. Release & Graph Sync Agent   |
                                             +-------------------------------------+
                                                                |
-                                            Auto-Inject Patches| Git Commits
+                                            Auto-Inject Patches| Git Commits & PRs
                                                                v
                                             +-------------------------------------+
                                             | Target Repo: /workspace/fb_clone_repo|
@@ -48,54 +62,68 @@ A full-stack, enterprise-grade Autonomous Jira Agent system connected directly w
 
 ---
 
-## Key Features
+## Smooth Installation & Setup on Any System
 
-### 1. Jira Kanban Board & Neo4j Integration
-- **Kanban Workflow**: 5 statuses (**Backlog**, **To Do**, **In Progress**, **Code Review**, **Done**) with HTML5 drag-and-drop.
-- **Neo4j Graph Database**: Stores issues as `:Issue` nodes and links as directed Cypher relationships (`BLOCKS`, `DEPENDS_ON`, `RELATES_TO`, `SUBTASK_OF`, `DUPLICATES`).
-- **White and Blue Design Theme**: Clean Jira UI with dark blue action buttons (`#0b2545` / `#133a6f`).
+### Prerequisites
+- **Node.js** (v18+)
+- **Python** (3.10+) with `venv`
+- **Git**
+- Optional: **Neo4j Desktop** (system automatically falls back to in-memory mode if Neo4j is offline)
 
-### 2. Autonomous Multi-Agent LangGraph Pipeline (`agent_backend`)
-- **Vigilant Agent**: Monitors new tickets via background watchdog polling, triages requirements, computes risk, and transitions tickets to `IN_PROGRESS`.
-- **Planner Agent**: Deconstructs requirements into modular technical milestones and identifies file targets in the codebase.
-- **Researcher Agent**: Analyzes codebase files, CSS design tokens, and Neo4j knowledge docs to formulate guardrails.
-- **Coder Agent**: Synthesizes and writes implementation patches directly into the `/workspace/fb_clone_repo` codebase.
-- **Test & Auditor Agent**: Runs security audit, validates code standards, commits verified code to Git, creates an open Pull Request in `pull_requests.json`, and updates the Jira ticket to `REVIEW`.
-
-### 3. Interactive UI Tabs
-1. **Kanban**: Full Jira Kanban board with search, filters, story points, and quick ticket creation.
-2. **Neo4j Graph**: Interactive SVG graph visualizer with live node positions, directed relationship arrows, and Cypher query inspector.
-3. **Autonomous Agents**: Real-time LangGraph execution flowchart, active agent pulse indicator, live terminal thought stream, and manual run triggers.
-4. **Repo & Diff**: GitHub-style diff viewer supporting single-commit diffs, range diffs, unified/split views, and PR review tray.
-5. **Knowledge Base**: Architecture rules, CSS tokens, and component guidelines stored in Neo4j.
+### One-Command Setup (All Operating Systems)
+Run the automated cross-platform setup script from the project root:
+```bash
+npm run setup
+```
+This automated setup:
+1. Detects system Python (`python3` on Unix/macOS, `python` on Windows).
+2. Installs root, Express server, and Vite client npm packages.
+3. Automatically sets up the Python virtual environment (`agent_backend/.venv`) and installs `requirements.txt`.
+4. Copies `.env.example` templates to `.env` if missing.
+5. Verifies and initializes the isolated Git repository in `workspace/fb_clone_repo`.
+6. Checks port availability across ports `5173`, `4000`, `8000`, and `7687`.
 
 ---
 
-## Getting Started
+## Running the Application
 
-### 1. Prerequisites
-- **Node.js** (v18+)
-- **Python** (3.10+)
-- **Neo4j Desktop** (running on `bolt://localhost:7687`, default username `neo4j`)
-
-### 2. Run All Services Concurrently
-Double-click `start.bat` or run from the project root:
+### Option A: Universal NPM Command (Windows, macOS, Linux)
 ```bash
-start.bat
-# or
 npm run dev
 ```
+Starts all 3 services concurrently with color-coded logging.
 
-This starts:
-- **Express Backend**: [http://localhost:4000](http://localhost:4000)
-- **Vite Frontend**: [http://localhost:5173](http://localhost:5173)
-- **FastAPI Agent Backend**: [http://localhost:8000](http://localhost:8000)
+### Option B: One-Click Launchers
+* **Windows**: Double-click `start.bat` or run `.\run.bat`
+* **macOS / Linux**:
+  ```bash
+  chmod +x start.sh
+  ./start.sh
+  ```
 
 ---
 
-## Connecting to Neo4j Desktop
+## Dynamic Orchestration Flow
 
-1. Open **Neo4j Desktop** and start your local database.
-2. Open the application at [http://localhost:5173](http://localhost:5173).
-3. The top navbar shows a **Neo4j Live** status indicator when connected.
-4. To modify connection parameters (e.g., custom password or database name), click the **Neo4j Status** button or **Database icon** in the top navbar, test the connection, and save.
+The LangGraph multi-agent pipeline uses **adaptive conditional routing**:
+
+1. **Direct Fast-Track Route** (e.g. *"update button color"*, UI styling, font adjustments):
+   $$\text{START} \longrightarrow \text{Vigilant} \longrightarrow \text{Planner} \xrightarrow{\text{bypass research}} \text{Coder} \longrightarrow \text{Release \& Graph Sync} \longrightarrow \text{END}$$
+   * Skips unnecessary research and security audits.
+   * Coder directly applies the patch and commits changes to Git.
+   * Release Agent updates the Jira Kanban board to `DONE` and syncs documentation & commits into Neo4j.
+
+2. **Full Pipeline Route** (Complex multi-module architectural features):
+   $$\text{START} \longrightarrow \text{Vigilant} \longrightarrow \text{Planner} \longrightarrow \text{Researcher} \longrightarrow \text{Coder} \longrightarrow \text{Tester} \longrightarrow \text{Release} \longrightarrow \text{END}$$
+
+---
+
+## Customizing Ports
+
+All ports can be overridden in `.env`:
+```env
+CLIENT_PORT=5173
+SERVER_PORT=4000
+AGENT_PORT=8000
+NEO4J_URI=bolt://localhost:7687
+```

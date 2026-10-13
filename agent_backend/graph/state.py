@@ -24,6 +24,11 @@ class AgentState(TypedDict):
     tester_result: Dict[str, Any]
     release_result: Dict[str, Any]
     
+    requires_research: Optional[bool]
+    requires_testing: Optional[bool]
+    execution_route: Optional[str]
+    skipped_agents: Optional[List[str]]
+    
     thoughts: List[Dict[str, Any]]
     modified_files: List[str]
     git_commit: Dict[str, Any]

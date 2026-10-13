@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-title Auto Jira Agent - All Services
+title Auto Jira Agent - Autonomous Multi-Agent System
 cd /d "%~dp0"
 
 echo ========================================================
@@ -18,80 +18,45 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-:: 2. Check Python Virtual Environment
-if not exist "agent_backend\.venv\Scripts\python.exe" (
-    echo [WARNING] Python virtual environment not found at agent_backend\.venv
-    echo Creating virtual environment...
-    python -m venv agent_backend\.venv
-    if exist "agent_backend\requirements.txt" (
-        echo Installing agent backend requirements...
-        agent_backend\.venv\Scripts\python.exe -m pip install -r agent_backend\requirements.txt
-    )
-)
-
-:: 3. Check dependencies
-if not exist "node_modules\concurrently" (
-    echo [INFO] Installing root dependencies...
-    call npm install
-)
-
-if not exist "server\node_modules" (
+:: 2. Check if setup is needed
+if not exist "node_modules" (
+    echo [INFO] Running initial cross-platform setup...
+    call node scripts/setup.js
+) else if not exist "server\node_modules" (
     echo [INFO] Installing server dependencies...
-    call npm --prefix server install
-)
-
-if not exist "client\node_modules" (
+    call node scripts/setup.js
+) else if not exist "client\node_modules" (
     echo [INFO] Installing client dependencies...
-    call npm --prefix client install
-)
-
-:: 4. Verify workspace target git repository
-if exist "workspace\fb_clone_repo" (
-    if not exist "workspace\fb_clone_repo\.git" (
-        if exist "workspace\fb_clone_repo.bundle" (
-            echo [INFO] Restoring workspace\fb_clone_repo git history from bundle...
-            git clone "workspace\fb_clone_repo.bundle" "workspace\temp_fb_repo" >nul 2>&1
-            if exist "workspace\temp_fb_repo\.git" (
-                move "workspace\temp_fb_repo\.git" "workspace\fb_clone_repo\.git" >nul 2>&1
-                rd /s /q "workspace\temp_fb_repo" >nul 2>&1
-            )
-        )
-        if not exist "workspace\fb_clone_repo\.git" (
-            echo [INFO] Initializing git in workspace\fb_clone_repo...
-            pushd workspace\fb_clone_repo
-            git init -b main >nul 2>&1
-            git config user.name "Alex Morgan"
-            git config user.email "alex@autojira.io"
-            git add . >nul 2>&1
-            git commit -m "Initial skeleton for fb_clone_repo" >nul 2>&1
-            popd
-        )
-    )
+    call node scripts/setup.js
+) else if not exist "agent_backend\.venv" (
+    echo [INFO] Setting up Python virtual environment...
+    call node scripts/setup.js
 )
 
 :: Check for separate window mode (--split or -s)
 if "%1"=="--split" goto split_mode
 if "%1"=="-s" goto split_mode
 
-echo Starting all services in unified console:
-echo   [1] Express API Server:   http://localhost:4000
-echo   [2] Vite React UI:        http://localhost:5173
+echo Starting all services with distinct port assignments:
+echo   [1] Vite React UI:        http://localhost:5173
+echo   [2] Express API Server:   http://localhost:4000
 echo   [3] Python Agent Backend: http://localhost:8000
+echo   [4] Neo4j Graph Database: bolt://localhost:7687
 echo.
-echo Opening browser in 4 seconds...
+echo Opening browser in 3 seconds...
 echo Press Ctrl+C to stop all services.
 echo ========================================================
 echo.
 
 :: Open default browser after brief startup delay
-start /b "" cmd /c "timeout /t 4 /nobreak >nul && start http://localhost:5173"
+start /b "" cmd /c "timeout /t 3 /nobreak >nul && start http://localhost:5173"
 
-:: Run all services concurrently
+:: Run all services concurrently via cross-platform runners
 call npm run dev
 goto end
 
 :split_mode
-echo Launching services in separate terminal windows...
+echo Launching services in separate terminal windows with dedicated ports...
 start "Express API Server (Port 4000)" cmd /k "cd /d \"%~dp0\" && npm run server"
 start "Vite React UI (Port 5173)" cmd /k "cd /d \"%~dp0\" && npm run client"
 start "Python Agent Backend (Port 8000)" cmd /k "cd /d \"%~dp0\" && npm run agent"

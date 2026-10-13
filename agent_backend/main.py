@@ -27,6 +27,10 @@ current_pipeline_state: Dict[str, Any] = {
     "current_agent": "idle", # "idle" | "vigilant" | "planner" | "researcher" | "coder" | "tester" | "release" | "completed"
     "pipeline_status": "idle", # "idle" | "running" | "completed" | "failed"
     "last_action": "System Ready",
+    "requires_research": None,
+    "requires_testing": None,
+    "execution_route": "pending",
+    "skipped_agents": [],
     "vigilant_result": {},
     "planner_result": {},
     "researcher_result": {},
@@ -46,7 +50,7 @@ set_state_ref(current_pipeline_state)
 pipeline_history: List[Dict[str, Any]] = []
 
 async def execute_ticket_pipeline(ticket_data: dict):
-    """Executes the autonomous 6-Agent LangGraph multi-agent pipeline with live streaming."""
+    """Executes the dynamic multi-agent LangGraph pipeline with live streaming."""
     global current_pipeline_state, pipeline_history
 
     ticket_id = ticket_data.get("id", f"ticket-{int(datetime.now().timestamp())}")
@@ -56,13 +60,13 @@ async def execute_ticket_pipeline(ticket_data: dict):
     ticket_prio = ticket_data.get("priority", "MEDIUM")
     ticket_type = ticket_data.get("type", "Task")
 
-    print(f"\n[Pipeline] [START] Starting Autonomous 6-Agent LangGraph Run for {ticket_key}: '{ticket_title}'")
+    print(f"\n[Pipeline] [START] Starting Dynamic LangGraph Multi-Agent Run for {ticket_key}: '{ticket_title}'")
 
     initial_thoughts = [
         {
             "agent": "System",
             "timestamp": datetime.now().strftime("%H:%M:%S"),
-            "thought": f"Autonomous LangGraph workflow initialized for Jira ticket {ticket_key}.",
+            "thought": f"Dynamic LangGraph workflow initialized for Jira ticket {ticket_key}.",
             "action": "Starting Vigilant Monitor"
         }
     ]
@@ -76,6 +80,10 @@ async def execute_ticket_pipeline(ticket_data: dict):
         "ticket_type": ticket_type,
         "current_agent": "vigilant",
         "pipeline_status": "running",
+        "requires_research": None,
+        "requires_testing": None,
+        "execution_route": "evaluating",
+        "skipped_agents": [],
         "vigilant_result": {},
         "planner_result": {},
         "researcher_result": {},
@@ -102,7 +110,7 @@ async def execute_ticket_pipeline(ticket_data: dict):
             for node_name, node_state in output_step.items():
                 current_pipeline_state.update(node_state)
                 current_pipeline_state["updated_at"] = datetime.now().isoformat()
-                print(f"[Pipeline] -> Node '{node_name}' finished. Next agent: {node_state.get('current_agent')}")
+                print(f"[Pipeline] -> Node '{node_name}' finished. Next agent: {node_state.get('current_agent')} (Route: {current_pipeline_state.get('execution_route')})")
                 await broadcast_event("node_transition", {
                     "completed_node": node_name,
                     "current_agent": node_state.get("current_agent"),
@@ -120,7 +128,7 @@ async def execute_ticket_pipeline(ticket_data: dict):
             pipeline_history.pop()
 
         await broadcast_event("completed", current_pipeline_state)
-        print(f"[Pipeline] [SUCCESS] Completed full 6-agent pipeline run for {ticket_key}!\n")
+        print(f"[Pipeline] [SUCCESS] Completed dynamic multi-agent pipeline run for {ticket_key} (Route: {current_pipeline_state.get('execution_route')})!\n")
 
     except Exception as e:
         print(f"[Pipeline] [ERROR] Error in LangGraph execution: {e}")
@@ -170,6 +178,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "Auto-Jira Python Agent Backend",
+        "port": AGENT_PORT,
         "model": GEMINI_MODEL,
         "has_api_key": bool(GEMINI_API_KEY),
         "active_pipeline": current_pipeline_state.get("current_agent")

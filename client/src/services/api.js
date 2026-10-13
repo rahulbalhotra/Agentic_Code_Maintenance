@@ -151,7 +151,7 @@ export async function fetchWorkspaceDiff({ repo = 'fb_clone_repo', base = null, 
   return res.json();
 }
 
-const AGENT_BASE_URL = 'http://localhost:8000/api';
+const AGENT_BASE_URL = import.meta.env.VITE_AGENT_URL || 'http://localhost:8000/api';
 
 export async function fetchPipelineStatus() {
   const res = await fetch(`${AGENT_BASE_URL}/pipeline/status`);

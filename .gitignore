@@ -2,8 +2,11 @@
 node_modules/
 */node_modules/
 
-# Environment and Secrets (exclude specific secrets if needed, allow repo templates)
+# Environment and Secrets
+.env
+*.env
 *.env.local
+!*.env.example
 
 # Python
 __pycache__/

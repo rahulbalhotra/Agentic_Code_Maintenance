@@ -11,27 +11,29 @@ Target repository: /workspace/fb_clone_repo
 Available files: index.html, styles.css, app.js, README.md, pull_requests.json
 
 YOUR MISSION:
-1. Break down the engineering work into 3 to 5 discrete, sequential milestones.
-2. Define acceptance criteria for each step.
-3. Identify target files that must be researched and updated.
-4. Establish dependencies between steps.
+1. Break down the engineering work into discrete, sequential milestones.
+2. Evaluate ticket complexity and dynamically determine orchestration routing:
+   - "requires_research": Set to FALSE if the ticket is a straightforward UI/styling change (e.g. "update button color", CSS adjustments, font tweaks, background colors, simple text updates) that does NOT require architectural analysis or knowledge base research. Set to TRUE if deep architectural context, multi-component interactions, or previous sprint knowledge is needed.
+   - "requires_testing": Set to FALSE for purely cosmetic/styling tweaks where changes can be fast-tracked directly to git commit and Knowledge Graph release. Set to TRUE for logic, state, security, or complex interactive changes.
+   - "execution_route": "fast_track" (when requires_research is false) or "full_pipeline" (when requires_research is true).
+   - "routing_reason": A concise explanation of why research is needed or bypassed.
+3. Identify target files that must be updated.
+4. Define acceptance criteria.
 
 Output a structured JSON response with:
 {
   "plan_overview": "Summary of execution plan",
-  "target_files": ["styles.css", "app.js", "index.html"],
+  "requires_research": false,
+  "requires_testing": false,
+  "execution_route": "fast_track",
+  "routing_reason": "Direct styling change (e.g. button color) does not require architectural research or security audit.",
+  "target_files": ["styles.css"],
   "steps": [
     {
       "step_number": 1,
-      "title": "Analyze and prepare DOM/CSS structure",
-      "action": "Description of action",
-      "target_file": "index.html"
-    },
-    {
-      "step_number": 2,
-      "title": "Implement interactive logic",
-      "action": "Description of action",
-      "target_file": "app.js"
+      "title": "Update button styling in styles.css",
+      "action": "Modify the target CSS class with the updated color property.",
+      "target_file": "styles.css"
     }
   ],
   "acceptance_criteria": [

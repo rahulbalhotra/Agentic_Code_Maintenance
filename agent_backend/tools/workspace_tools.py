@@ -33,6 +33,12 @@ def write_workspace_file(file_path: str, content: str) -> bool:
 def git_commit_changes(commit_message: str) -> dict:
     """Stage all changes and commit in the workspace git repo."""
     try:
+        git_dir = WORKSPACE_REPO / ".git"
+        if not git_dir.exists():
+            subprocess.run(["git", "init"], cwd=WORKSPACE_REPO, check=True)
+            subprocess.run(["git", "add", "."], cwd=WORKSPACE_REPO, check=True)
+            subprocess.run(["git", "commit", "-m", "Initial skeleton for fb_clone_repo"], cwd=WORKSPACE_REPO, check=True)
+
         # Check if changes exist
         status_out = subprocess.check_output(["git", "status", "--porcelain"], cwd=WORKSPACE_REPO, text=True)
         if not status_out.strip():

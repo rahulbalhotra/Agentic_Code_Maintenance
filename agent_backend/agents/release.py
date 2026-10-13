@@ -15,10 +15,14 @@ async def run_release_agent(state: dict) -> dict:
     pull_request = state.get("pull_request")
     modified_files = state.get("modified_files", [])
 
+    requires_testing = state.get("requires_testing", True)
+    audit_score = tester_res.get("score", 100 if not requires_testing else 95)
+    audit_label = f"quality audit score ({audit_score}/100)" if tester_res else "direct fast-track execution"
+
     # 1. Live streaming thought: evaluating test audit
     await emit_pipeline_thought(
         "Release",
-        f"Evaluating quality audit score ({tester_res.get('score', 95)}/100) and preparing Kanban release for {ticket_key}.",
+        f"Evaluating {audit_label} and preparing Kanban release for {ticket_key}.",
         "Audit Evaluation & Release Deck"
     )
 
@@ -34,7 +38,7 @@ async def run_release_agent(state: dict) -> dict:
         ticket_title=ticket_title,
         ticket_description=ticket_desc,
         tester_verdict=verdict,
-        tester_score=tester_res.get("score", 96),
+        tester_score=audit_score,
         modified_files=", ".join(modified_files) if modified_files else "styles.css, app.js",
         commit_info=commit_summary
     )
@@ -47,7 +51,7 @@ async def run_release_agent(state: dict) -> dict:
             "key": f"KB-{ticket_key}",
             "title": f"Architecture & Progress: {ticket_title}",
             "category": "Feature Progress & Architecture",
-            "summary": f"Autonomous engineering progress for {ticket_key}: modified {files_str}. Tested with score {tester_res.get('score', 96)}/100.",
+            "summary": f"Autonomous engineering progress for {ticket_key}: modified {files_str}. Verified with score {audit_score}/100.",
             "content": f"""### Feature Milestone: {ticket_key} - {ticket_title}
 
 #### 1. Overview

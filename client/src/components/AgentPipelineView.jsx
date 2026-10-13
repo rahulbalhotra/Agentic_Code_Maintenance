@@ -50,7 +50,8 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
 
     const setupSSE = () => {
       try {
-        eventSource = new EventSource('http://localhost:8000/api/pipeline/stream');
+        const streamUrl = (import.meta.env.VITE_AGENT_URL || 'http://localhost:8000/api').replace(/\/api\/?$/, '') + '/api/pipeline/stream';
+        eventSource = new EventSource(streamUrl);
 
         eventSource.onmessage = (event) => {
           if (!isMounted) return;
@@ -163,6 +164,9 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
   const thoughts = pipelineState?.thoughts || [];
 
   const getStageStatus = (stageId, index) => {
+    const skipped = pipelineState?.skipped_agents || [];
+    if (skipped.includes(stageId)) return 'skipped';
+
     if (pipelineStatus === 'completed') return 'completed';
     if (currentAgent === stageId) return 'running';
 
@@ -173,6 +177,8 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
     if (currentIndex > stageIndex) return 'completed';
     return 'idle';
   };
+
+  const executionRoute = pipelineState?.execution_route;
 
   return (
     <div style={{ maxWidth: '1350px', margin: '0 auto', padding: '24px 20px', fontFamily: 'var(--font-family, sans-serif)' }}>
@@ -191,7 +197,7 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
         gap: '20px'
       }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
             <span style={{
               background: '#ebf3ff',
               color: '#0052cc',
@@ -203,8 +209,38 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
               alignItems: 'center',
               gap: '6px'
             }}>
-              <Sparkles size={14} /> 6-Agent Autonomous LangGraph
+              <Sparkles size={14} /> Dynamic LangGraph Multi-Agent
             </span>
+            {executionRoute === 'fast_track' && (
+              <span style={{
+                background: '#fef3c7',
+                color: '#b45309',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: '700',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <Zap size={14} /> Fast-Track Route (Planner ➔ Coder ➔ Release & Graph Sync)
+              </span>
+            )}
+            {executionRoute === 'full_pipeline' && (
+              <span style={{
+                background: '#f3e8ff',
+                color: '#7e22ce',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: '700',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <Layers size={14} /> Full Pipeline (Planner ➔ Researcher ➔ Coder ➔ Tester ➔ Release)
+              </span>
+            )}
             <span style={{
               background: health?.status === 'healthy' ? '#ecfdf5' : '#fff1f2',
               color: health?.status === 'healthy' ? '#059669' : '#e11d48',
@@ -213,7 +249,7 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
               fontSize: '0.75rem',
               fontWeight: '600'
             }}>
-              {health?.status === 'healthy' ? '● Engine Online (Port 8000)' : '○ Backend Connecting...'}
+              {health?.status === 'healthy' ? `● Engine Online (Port ${health?.port || 8000})` : '○ Backend Connecting...'}
             </span>
             <span style={{
               background: '#f1f5f9',
@@ -228,10 +264,10 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
           </div>
 
           <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0b2545', margin: '0 0 6px 0' }}>
-            Autonomous Multi-Agent Engineering Pipeline
+            Adaptive Multi-Agent Engineering Pipeline
           </h2>
           <p style={{ margin: 0, fontSize: '0.88rem', color: '#64748b' }}>
-            Watchdog Triages &rarr; Planner Decomposes &rarr; Researcher Inspects KB &rarr; Coder Patches &rarr; Tester Audits & Commits &rarr; Release moves Kanban to DONE & Syncs Neo4j Graph.
+            Dynamic LangGraph Orchestration: Planner analyzes ticket scope & bypasses research for direct tasks (e.g. button color), directly invoking Coder and updating the Knowledge Graph.
           </p>
         </div>
 
@@ -356,16 +392,19 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
               <div
                 key={stage.id}
                 style={{
-                  background: isCurrent ? '#f0f7ff' : status === 'completed' ? '#f8fafc' : '#ffffff',
+                  background: isCurrent ? '#f0f7ff' : status === 'completed' ? '#f8fafc' : status === 'skipped' ? '#fafafa' : '#ffffff',
                   border: isCurrent 
                     ? '2px solid #0052cc' 
                     : status === 'completed' 
                     ? '1.5px solid #86efac' 
+                    : status === 'skipped'
+                    ? '1.5px dashed #cbd5e1'
                     : '1px solid #e2e8f0',
                   borderRadius: '12px',
                   padding: '16px',
                   position: 'relative',
                   transition: 'all 0.3s ease',
+                  opacity: status === 'skipped' ? 0.75 : 1,
                   boxShadow: isCurrent ? '0 6px 18px rgba(0, 82, 204, 0.15)' : 'none'
                 }}
               >
@@ -374,8 +413,8 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
                     width: '36px',
                     height: '36px',
                     borderRadius: '10px',
-                    background: isCurrent ? '#0052cc' : status === 'completed' ? '#22c55e' : '#f1f5f9',
-                    color: isCurrent || status === 'completed' ? '#ffffff' : '#64748b',
+                    background: isCurrent ? '#0052cc' : status === 'completed' ? '#22c55e' : status === 'skipped' ? '#94a3b8' : '#f1f5f9',
+                    color: isCurrent || status === 'completed' || status === 'skipped' ? '#ffffff' : '#64748b',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
@@ -388,10 +427,10 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
                     fontWeight: '700',
                     padding: '2px 8px',
                     borderRadius: '12px',
-                    background: isCurrent ? '#bfdbfe' : status === 'completed' ? '#dcfce7' : '#f1f5f9',
-                    color: isCurrent ? '#1e40af' : status === 'completed' ? '#166534' : '#94a3b8'
+                    background: isCurrent ? '#bfdbfe' : status === 'completed' ? '#dcfce7' : status === 'skipped' ? '#f1f5f9' : '#f1f5f9',
+                    color: isCurrent ? '#1e40af' : status === 'completed' ? '#166534' : status === 'skipped' ? '#64748b' : '#94a3b8'
                   }}>
-                    {isCurrent ? 'ACTIVE' : status === 'completed' ? 'DONE' : 'PENDING'}
+                    {isCurrent ? 'ACTIVE' : status === 'completed' ? 'DONE' : status === 'skipped' ? 'SKIPPED' : 'PENDING'}
                   </span>
                 </div>
 
@@ -403,6 +442,11 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
                 </div>
 
                 {/* Sub-metrics */}
+                {status === 'skipped' && (
+                  <div style={{ marginTop: '8px', fontSize: '0.72rem', fontStyle: 'italic', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Zap size={12} color="#f59e0b" /> Bypassed (Direct Route)
+                  </div>
+                )}
                 {status === 'completed' && stage.id === 'tester' && pipelineState?.tester_result?.score && (
                   <div style={{ marginTop: '8px', fontSize: '0.75rem', fontWeight: '700', color: '#059669' }}>
                     Score: {pipelineState.tester_result.score}/100 PASSED
