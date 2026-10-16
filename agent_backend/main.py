@@ -11,7 +11,13 @@ from typing import Optional, Dict, Any, List
 from .config import AGENT_PORT, GEMINI_MODEL, GEMINI_API_KEY
 from .graph.pipeline import app_pipeline
 from .graph.state import AgentState
-from .watchdog import start_vigilant_watchdog, register_pipeline_runner, processed_tickets
+from .watchdog import (
+    start_vigilant_watchdog,
+    register_pipeline_runner,
+    processed_tickets,
+    set_pipeline_active,
+    get_latest_queue
+)
 from .event_stream import (
     set_state_ref,
     subscribe_stream,
@@ -103,6 +109,7 @@ async def execute_ticket_pipeline(ticket_data: dict):
     current_pipeline_state["updated_at"] = datetime.now().isoformat()
 
     await broadcast_event("state", current_pipeline_state)
+    set_pipeline_active(True)
 
     try:
         # Stream step-by-step through LangGraph
@@ -145,6 +152,8 @@ async def execute_ticket_pipeline(ticket_data: dict):
             "error": str(e),
             "state": current_pipeline_state
         })
+    finally:
+        set_pipeline_active(False)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -193,6 +202,11 @@ async def get_pipeline_status():
 async def get_pipeline_history():
     """Returns recent pipeline execution runs."""
     return pipeline_history
+
+@app.get("/api/pipeline/queue")
+async def get_pipeline_queue():
+    """Returns the prioritized execution queue determined by dependency topological sort and sizing scores."""
+    return get_latest_queue()
 
 @app.get("/api/pipeline/stream")
 async def stream_pipeline_events():

@@ -21,9 +21,12 @@ import {
   Flame,
   Activity,
   Layers,
-  Zap
+  Zap,
+  Lock,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
-import { fetchPipelineStatus, fetchPipelineHistory, triggerPipeline, fetchAgentHealth } from '../services/api.js';
+import { fetchPipelineStatus, fetchPipelineHistory, triggerPipeline, fetchAgentHealth, fetchPrioritizedIssues } from '../services/api.js';
 
 const AGENT_STAGES = [
   { id: 'vigilant', label: 'Vigilant Agent', icon: ShieldCheck, color: '#0284c7', desc: 'Triage & Status -> IN_PROGRESS' },
@@ -38,9 +41,10 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
   const [pipelineState, setPipelineState] = useState(null);
   const [history, setHistory] = useState([]);
   const [health, setHealth] = useState(null);
+  const [queueData, setQueueData] = useState({ readyQueue: [], blockedQueue: [], allIssues: [], nextRecommended: null });
   const [selectedTicketId, setSelectedTicketId] = useState('');
   const [isTriggering, setIsTriggering] = useState(false);
-  const [activeTab, setActiveTab] = useState('thoughts'); // 'thoughts' | 'artifacts' | 'history'
+  const [activeTab, setActiveTab] = useState('thoughts'); // 'thoughts' | 'artifacts' | 'history' | 'queue'
   const terminalEndRef = useRef(null);
 
   // Real-time Server-Sent Events (SSE) Stream + Fallback Polling
@@ -97,10 +101,11 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
     // Polling fallback and periodic history/health check
     const poll = async () => {
       try {
-        const [st, hist, hl] = await Promise.all([
+        const [st, hist, hl, queue] = await Promise.all([
           fetchPipelineStatus().catch(() => null),
           fetchPipelineHistory().catch(() => []),
-          fetchAgentHealth().catch(() => null)
+          fetchAgentHealth().catch(() => null),
+          fetchPrioritizedIssues().catch(() => null)
         ]);
         if (isMounted) {
           if (st) {
@@ -113,6 +118,7 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
           }
           if (hist) setHistory(hist);
           if (hl) setHealth(hl);
+          if (queue) setQueueData(queue);
         }
       } catch (err) {}
     };
@@ -496,6 +502,15 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
           <Clock size={15} style={{ marginRight: '6px' }} />
           Pipeline History ({history.length})
         </button>
+
+        <button
+          onClick={() => setActiveTab('queue')}
+          className={activeTab === 'queue' ? 'btn-dark-blue' : 'btn-secondary'}
+          style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+        >
+          <Layers size={15} style={{ marginRight: '6px' }} />
+          Prioritized Queue ({queueData?.readyQueue?.length || 0} Ready)
+        </button>
       </div>
 
       {/* Tab 1: Live Agent Thoughts & Actions Stream Terminal */}
@@ -787,6 +802,274 @@ export default function AgentPipelineView({ issues = [], onNavigateToRepo, onSel
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab 4: Automated Prioritization & Dependency Queue */}
+      {activeTab === 'queue' && (
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          padding: '24px',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.04)'
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h4 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', color: '#0b2545', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Layers size={20} color="#0052cc" />
+                Automated Prioritization & Dependency Queue
+              </h4>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+                Powered by Neo4j graph dependency analysis (:BLOCKS, :DEPENDS_ON) and Weighted Shortest Job First (WSJF) sizing.
+              </p>
+            </div>
+
+            {queueData?.nextRecommended && (
+              <button
+                className="btn-primary"
+                style={{ padding: '8px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                disabled={isTriggering || pipelineStatus === 'running'}
+                onClick={() => handleTriggerTicket(queueData.nextRecommended.id)}
+              >
+                <Play size={14} />
+                Execute #1 Recommended ({queueData.nextRecommended.key})
+              </button>
+            )}
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: '700', color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Ready to Execute (Unblocked)
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#15803d', marginTop: '4px' }}>
+                {queueData?.readyQueue?.length || 0}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#166534', marginTop: '2px' }}>
+                Zero active blockers &bull; Ranked by WSJF score
+              </div>
+            </div>
+
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '14px' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: '700', color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Blocked by Prerequisites
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#dc2626', marginTop: '4px' }}>
+                {queueData?.blockedQueue?.length || 0}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#991b1b', marginTop: '2px' }}>
+                Waiting on preceding tasks to reach DONE
+              </div>
+            </div>
+
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '14px' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: '700', color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Next Optimal Task
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#1d4ed8', marginTop: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {queueData?.nextRecommended?.key ? `${queueData.nextRecommended.key} (${queueData.nextRecommended.storyPoints} SP)` : 'All Up to Date'}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#1e40af', marginTop: '2px' }}>
+                {queueData?.nextRecommended ? `Score: ${queueData.nextRecommended.priorityScore}` : 'Queue fully processed'}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 1: Ready Queue */}
+          <div style={{ marginBottom: '28px' }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+              Ready Execution Queue &bull; Ordered by Sizing & Priority (Smallest & Most Impactful First)
+            </h5>
+
+            {(!queueData?.readyQueue || queueData.readyQueue.length === 0) ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                No unblocked tickets pending in TODO or BACKLOG.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {queueData.readyQueue.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      border: idx === 0 ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '14px 18px',
+                      background: idx === 0 ? '#f0f9ff' : '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '12px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '280px' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        background: idx === 0 ? '#2563eb' : '#f1f5f9',
+                        color: idx === 0 ? '#ffffff' : '#475569',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: '800',
+                        fontSize: '0.9rem'
+                      }}>
+                        #{idx + 1}
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                          <span style={{ fontWeight: '700', color: '#0052cc', fontSize: '0.95rem' }}>
+                            {item.key}
+                          </span>
+                          <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.9rem' }}>
+                            {item.title}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: '#64748b', flexWrap: 'wrap' }}>
+                          <span style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', fontWeight: '600' }}>
+                            {item.storyPoints} SP
+                          </span>
+                          <span style={{ background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px', fontWeight: '600' }}>
+                            Priority: {item.priority}
+                          </span>
+                          {item.storyPoints <= 2 && (
+                            <span style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                              ⚡ Quick Win (Small)
+                            </span>
+                          )}
+                          {item.unblocksCount > 0 && (
+                            <span style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                              🔓 Unblocks {item.unblocksCount} task(s)
+                            </span>
+                          )}
+                          <span style={{ color: '#0284c7', fontWeight: '600' }}>
+                            &bull; {item.recommendedOrderReason}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '700' }}>
+                          WSJF Score
+                        </div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0b2545' }}>
+                          {item.priorityScore}
+                        </div>
+                      </div>
+
+                      <button
+                        className="btn-secondary"
+                        style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        disabled={isTriggering || pipelineStatus === 'running'}
+                        onClick={() => handleTriggerTicket(item.id)}
+                      >
+                        <Play size={12} />
+                        Run Agent
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Blocked Queue */}
+          <div style={{ marginBottom: '24px' }}>
+            <h5 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Lock size={15} color="#dc2626" />
+              Blocked by Prerequisites (Paused Until Dependencies Complete)
+            </h5>
+
+            {(!queueData?.blockedQueue || queueData.blockedQueue.length === 0) ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                No tasks are currently blocked by dependencies! All issues are unblocked and executable.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {queueData.blockedQueue.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      border: '1px solid #fee2e2',
+                      borderRadius: '10px',
+                      padding: '12px 16px',
+                      background: '#fffbfb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '10px'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                        <span style={{ fontWeight: '700', color: '#991b1b', fontSize: '0.9rem' }}>
+                          {item.key}
+                        </span>
+                        <span style={{ fontWeight: '600', color: '#334155', fontSize: '0.88rem' }}>
+                          {item.title}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          ({item.storyPoints} SP &bull; {item.priority})
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Lock size={12} />
+                        <strong>Prerequisite Blockers:</strong> {item.activeBlockers?.map(b => `${b.key} (${b.status || 'TODO'})`).join(', ')}
+                      </div>
+                    </div>
+
+                    <span style={{
+                      background: '#fef2f2',
+                      color: '#b91c1c',
+                      border: '1px solid #fecaca',
+                      padding: '3px 10px',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      fontWeight: '700'
+                    }}>
+                      Awaiting Blocker
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Algorithm Card */}
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px 20px' }}>
+            <h6 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', fontWeight: '700', color: '#1e293b' }}>
+              ℹ️ How Autonomous Agent Prioritization Works:
+            </h6>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', fontSize: '0.8rem', color: '#475569' }}>
+              <div>
+                <strong style={{ color: '#0f172a' }}>1. Graph Blocker Resolution (DAG)</strong>
+                <p style={{ margin: '2px 0 0 0' }}>
+                  Tickets connected via <code>(:Issue)-[:BLOCKS]-&gt;(:Issue)</code> are kept on hold until the blocker ticket is verified and committed to <code>DONE</code>.
+                </p>
+              </div>
+              <div>
+                <strong style={{ color: '#0f172a' }}>2. Shortest Job First (SJF / WSJF)</strong>
+                <p style={{ margin: '2px 0 0 0' }}>
+                  Smaller tasks (1-2 Story Points, quick fixes, CSS tweaks) get higher relative scores, clearing bottlenecks rapidly before heavy multi-file features.
+                </p>
+              </div>
+              <div>
+                <strong style={{ color: '#0f172a' }}>3. Critical Path Unblock Bonus</strong>
+                <p style={{ margin: '2px 0 0 0' }}>
+                  Tasks that unblock multiple downstream tickets receive a <code>+10</code> urgency bonus per blocked dependent, keeping the entire pipeline unblocked.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

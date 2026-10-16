@@ -992,6 +992,115 @@ export async function populateSampleData() {
   return await seedFbCloneProject();
 }
 
+export async function getPrioritizedIssues() {
+  const graph = await getGraphData();
+  const allNodes = graph.nodes || [];
+  const relationships = graph.relationships || [];
+
+  const issues = allNodes.filter(n => n.nodeLabel === 'Issue' || n.key?.startsWith('FB-') || n.key?.startsWith('KAN-'));
+  const issueMap = new Map();
+  issues.forEach(i => {
+    issueMap.set(i.id, i);
+    if (i.key) issueMap.set(i.key, i);
+  });
+
+  // Build dependency mappings
+  // A BLOCKS B: B is blocked by A (A must be DONE for B to start)
+  // A DEPENDS_ON B: A is blocked by B (B must be DONE for A to start)
+  const blockersMap = new Map(); // issueId -> Set of blocker issueIds
+  const dependentsMap = new Map(); // issueId -> Set of dependent issueIds that this issue blocks
+
+  issues.forEach(i => {
+    blockersMap.set(i.id, new Set());
+    dependentsMap.set(i.id, new Set());
+  });
+
+  relationships.forEach(rel => {
+    const { sourceId, targetId, type } = rel;
+    if (type === 'BLOCKS') {
+      // sourceId BLOCKS targetId -> targetId has blocker sourceId
+      if (blockersMap.has(targetId)) blockersMap.get(targetId).add(sourceId);
+      if (dependentsMap.has(sourceId)) dependentsMap.get(sourceId).add(targetId);
+    } else if (type === 'DEPENDS_ON') {
+      // sourceId DEPENDS_ON targetId -> sourceId has blocker targetId
+      if (blockersMap.has(sourceId)) blockersMap.get(sourceId).add(targetId);
+      if (dependentsMap.has(targetId)) dependentsMap.get(targetId).add(sourceId);
+    }
+  });
+
+  const PRIORITY_SCORES = {
+    HIGHEST: 50,
+    HIGH: 40,
+    MEDIUM: 25,
+    LOW: 15,
+    LOWEST: 10
+  };
+
+  const enrichedIssues = issues.map(issue => {
+    const blockerIds = Array.from(blockersMap.get(issue.id) || []);
+    const blockerNodes = blockerIds.map(id => issueMap.get(id)).filter(Boolean);
+    const activeBlockers = blockerNodes.filter(b => b.status !== 'DONE');
+    const isBlocked = activeBlockers.length > 0;
+
+    const dependentIds = Array.from(dependentsMap.get(issue.id) || []);
+    const dependentNodes = dependentIds.map(id => issueMap.get(id)).filter(Boolean);
+    // Number of pending/active tasks this ticket is currently blocking
+    const pendingDependents = dependentNodes.filter(d => d.status !== 'DONE');
+
+    const points = Math.max(1, Number(issue.storyPoints) || 1);
+    const prioWeight = PRIORITY_SCORES[issue.priority?.toUpperCase()] || 25;
+
+    // WSJF (Weighted Shortest Job First) formula:
+    // Base Score = Priority Weight / (Story Points + 0.5)
+    // Bonus for Unblocking: + 10 points per pending blocked dependent
+    const unblockBonus = pendingDependents.length * 10;
+    const baseScore = parseFloat((prioWeight / (points + 0.5)).toFixed(2));
+    const totalScore = parseFloat((baseScore + unblockBonus).toFixed(2));
+
+    return {
+      ...issue,
+      storyPoints: points,
+      isBlocked,
+      activeBlockers: activeBlockers.map(b => ({ id: b.id, key: b.key, title: b.title, status: b.status })),
+      unblocksCount: pendingDependents.length,
+      unblocksIssues: pendingDependents.map(d => ({ id: d.id, key: d.key, title: d.title })),
+      basePriorityScore: baseScore,
+      priorityScore: isBlocked ? 0 : totalScore,
+      recommendedOrderReason: isBlocked
+        ? `Blocked by ${activeBlockers.map(b => b.key).join(', ')} (${activeBlockers[0]?.status})`
+        : pendingDependents.length > 0
+          ? `Top unblocker! Unblocks ${pendingDependents.length} tasks (${pendingDependents.map(d => d.key).join(', ')}). ${points} SP.`
+          : `Unblocked ready task: ${points} Story Points (${points <= 2 ? 'Quick Win / Small' : 'Medium/Large'}), Priority: ${issue.priority}.`
+    };
+  });
+
+  // Split into categories:
+  // 1. Ready Queue: in TODO or BACKLOG and NOT blocked, sorted by priorityScore descending (highest first)
+  const readyQueue = enrichedIssues
+    .filter(i => (i.status === 'TODO' || i.status === 'BACKLOG') && !i.isBlocked)
+    .sort((a, b) => b.priorityScore - a.priorityScore);
+
+  // 2. Blocked Queue: in TODO or BACKLOG and IS blocked
+  const blockedQueue = enrichedIssues
+    .filter(i => (i.status === 'TODO' || i.status === 'BACKLOG') && i.isBlocked)
+    .sort((a, b) => a.activeBlockers.length - b.activeBlockers.length);
+
+  // 3. In Progress Queue
+  const inProgressQueue = enrichedIssues.filter(i => i.status === 'IN_PROGRESS' || i.status === 'REVIEW');
+
+  // 4. Done Queue
+  const doneQueue = enrichedIssues.filter(i => i.status === 'DONE');
+
+  return {
+    readyQueue,
+    blockedQueue,
+    inProgressQueue,
+    doneQueue,
+    allIssues: enrichedIssues,
+    nextRecommended: readyQueue[0] || null
+  };
+}
+
 export function getDriver() {
   return driver;
 }

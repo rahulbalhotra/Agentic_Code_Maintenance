@@ -247,5 +247,11 @@ export async function executeDirectCypher(cypher, params = {}) {
   return res.json();
 }
 
+export async function fetchPrioritizedIssues() {
+  const res = await fetch(`${BASE_URL}/issues/prioritized`);
+  if (!res.ok) throw new Error('Failed to fetch prioritized queue');
+  return res.json();
+}
+
 
 

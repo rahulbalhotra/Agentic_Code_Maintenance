@@ -20,7 +20,8 @@ import {
   createCommitNode,
   createPullRequestNode,
   seedFbCloneProject,
-  populateSampleData
+  populateSampleData,
+  getPrioritizedIssues
 } from './neo4j.js';
 import {
   getWorkspaceRepos,
@@ -154,6 +155,17 @@ app.get('/api/graph', async (req, res) => {
     const data = await getGraphData();
     res.json(data);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Automated Jira Prioritization & Dependency Queue
+app.get('/api/issues/prioritized', async (req, res) => {
+  try {
+    const queueData = await getPrioritizedIssues();
+    res.json(queueData);
+  } catch (err) {
+    console.error('[API] /api/issues/prioritized error:', err);
     res.status(500).json({ error: err.message });
   }
 });

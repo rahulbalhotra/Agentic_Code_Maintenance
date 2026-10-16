@@ -1,44 +1,90 @@
 import asyncio
 import httpx
+from typing import Optional, Dict, Any, List
 from .config import EXPRESS_API_URL
 
 processed_tickets = set()
 pipeline_runner_callback = None
+is_executing = False
+latest_queue_cache: Dict[str, Any] = {
+    "readyQueue": [],
+    "blockedQueue": [],
+    "inProgressQueue": [],
+    "doneQueue": [],
+    "nextRecommended": None
+}
 
 def register_pipeline_runner(callback):
     global pipeline_runner_callback
     pipeline_runner_callback = callback
 
+def set_pipeline_active(active: bool):
+    global is_executing
+    is_executing = active
+
+def is_pipeline_active() -> bool:
+    return is_executing
+
+def get_latest_queue() -> Dict[str, Any]:
+    return latest_queue_cache
+
 async def start_vigilant_watchdog():
-    """Background watchdog task that keeps an eye on Jira tickets continuously."""
-    print("[Vigilant Watchdog] Active & monitoring Jira Kanban stream...")
-    
-    # Pre-populate already existing tickets on boot so it only triggers on new tickets
-    async with httpx.AsyncClient(timeout=5.0) as client:
-        try:
-            res = await client.get(f"{EXPRESS_API_URL}/graph")
-            if res.status_code == 200:
-                nodes = res.json().get("nodes", [])
-                for n in nodes:
-                    processed_tickets.add(n.get("id"))
-                print(f"[Vigilant Watchdog] Initialized with {len(processed_tickets)} known tickets.")
-        except Exception as e:
-            print(f"[Vigilant Watchdog] Initial poll warning: {e}")
+    """
+    Intelligent Prioritization Watchdog:
+    - Continuously inspects the Neo4j Jira Graph dependency network.
+    - Evaluates task sizing (Story Points) and blocker relationships (:BLOCKS, :DEPENDS_ON).
+    - Topologically orders tickets and dispatches the highest-value, smallest unblocked ticket first.
+    - Automatically unlocks and triggers dependent tickets as blockers reach 'DONE'.
+    """
+    global is_executing, latest_queue_cache
+    print("[Prioritization Watchdog] Active & monitoring Jira Dependency Graph...")
+
+    last_logged_ticket = None
 
     while True:
         try:
-            await asyncio.sleep(6) # Poll interval
+            await asyncio.sleep(5) # Poll interval
             async with httpx.AsyncClient(timeout=5.0) as client:
-                res = await client.get(f"{EXPRESS_API_URL}/graph")
+                res = await client.get(f"{EXPRESS_API_URL}/issues/prioritized")
                 if res.status_code == 200:
-                    nodes = res.json().get("nodes", [])
-                    for node in nodes:
-                        t_id = node.get("id")
-                        t_status = node.get("status", "TODO")
-                        if t_id and t_id not in processed_tickets and t_status in ["TODO", "BACKLOG"]:
-                            print(f"[Vigilant Watchdog] [NEW TICKET] Detected: {node.get('key')} - {node.get('title')}")
-                            processed_tickets.add(t_id)
+                    data = res.json()
+                    latest_queue_cache = data
+                    ready_queue = data.get("readyQueue", [])
+                    blocked_queue = data.get("blockedQueue", [])
+
+                    # If the dynamic multi-agent pipeline is currently working on a ticket, let it finish
+                    if is_executing:
+                        continue
+
+                    # If there are ready (unblocked) tickets
+                    if ready_queue:
+                        # Pick the #1 ranked candidate (Shortest Job First + Highest Priority + Unblocks Most Tasks)
+                        candidate = ready_queue[0]
+                        candidate_id = candidate.get("id")
+                        candidate_key = candidate.get("key", "UNKNOWN")
+
+                        # Avoid repeating tickets that were already processed in this session unless explicitly re-queued
+                        if candidate_id and candidate_id not in processed_tickets:
+                            score = candidate.get("priorityScore", 0)
+                            sp = candidate.get("storyPoints", 1)
+                            prio = candidate.get("priority", "MEDIUM")
+                            unblocks = candidate.get("unblocksCount", 0)
+
+                            print("\n" + "=" * 65)
+                            print(f"[Prioritization Watchdog] 🎯 DISPATCHING TOP UNBLOCKED TICKET: {candidate_key}")
+                            print(f" -> Title: {candidate.get('title')}")
+                            print(f" -> Score: {score} | Effort: {sp} Story Points | Priority: {prio} | Unblocks: {unblocks} task(s)")
+                            print(f" -> Reason: {candidate.get('recommendedOrderReason')}")
+                            if blocked_queue:
+                                blocked_summary = ", ".join([f"{b.get('key')} (needs {b.get('activeBlockers', [{}])[0].get('key', 'predecessor')})" for b in blocked_queue[:3]])
+                                print(f" -> Downstream Waiting: {blocked_summary}")
+                            print("=" * 65 + "\n")
+
+                            processed_tickets.add(candidate_id)
+                            last_logged_ticket = candidate_key
                             if pipeline_runner_callback:
-                                asyncio.create_task(pipeline_runner_callback(node))
+                                asyncio.create_task(pipeline_runner_callback(candidate))
+
         except Exception as err:
+            # Silent catch to prevent crash on backend reboot
             pass

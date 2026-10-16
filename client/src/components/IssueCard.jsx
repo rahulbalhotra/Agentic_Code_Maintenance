@@ -9,7 +9,8 @@ import {
   Minus, 
   Link2,
   Trash2,
-  MoreHorizontal
+  MoreHorizontal,
+  Lock
 } from 'lucide-react';
 
 const TYPE_ICONS = {
@@ -39,6 +40,17 @@ export default function IssueCard({
   const outgoingRels = connections.filter(c => c.sourceId === issue.id);
   const incomingRels = connections.filter(c => c.targetId === issue.id);
 
+  // Check dependency blockers & unblocking impact
+  const isBlocked = issue.isBlocked !== undefined
+    ? issue.isBlocked
+    : (issue.status !== 'DONE' && (
+        incomingRels.some(r => r.type === 'BLOCKS') ||
+        outgoingRels.some(r => r.type === 'DEPENDS_ON')
+      ));
+  const unblocksCount = issue.unblocksCount !== undefined
+    ? issue.unblocksCount
+    : outgoingRels.filter(r => r.type === 'BLOCKS').length;
+
   const getInitials = (name) => {
     if (!name) return 'UN';
     return name
@@ -60,6 +72,27 @@ export default function IssueCard({
         <div className="card-key-group">
           {TYPE_ICONS[issue.type] || TYPE_ICONS.Task}
           <span className="issue-key">{issue.key}</span>
+          {isBlocked && issue.status !== 'DONE' && (
+            <span
+              className="badge-blocked"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                background: '#fef2f2',
+                color: '#dc2626',
+                border: '1px solid #fecaca',
+                borderRadius: '4px',
+                fontSize: '10px',
+                fontWeight: 600,
+                padding: '1px 5px',
+                marginLeft: '4px'
+              }}
+              title="Blocked: Must complete prerequisites first"
+            >
+              <Lock size={10} /> Blocked
+            </span>
+          )}
         </div>
 
         <div className="card-actions-mini">
@@ -148,12 +181,44 @@ export default function IssueCard({
       )}
 
       <div className="card-footer">
-        <div className="footer-left">
+        <div className="footer-left" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <div className="priority-pill" title={`Priority: ${issue.priority}`}>
             {PRIORITY_ICONS[issue.priority] || PRIORITY_ICONS.MEDIUM}
           </div>
           {issue.storyPoints > 0 && (
             <span className="points-pill">{issue.storyPoints} pts</span>
+          )}
+          {!isBlocked && (issue.status === 'TODO' || issue.status === 'BACKLOG') && issue.storyPoints <= 2 && (
+            <span
+              style={{
+                fontSize: '10px',
+                background: '#ecfdf5',
+                color: '#059669',
+                border: '1px solid #a7f3d0',
+                borderRadius: '4px',
+                padding: '1px 5px',
+                fontWeight: 600
+              }}
+              title="Small task - prioritized for quick release"
+            >
+              ⚡ Quick Win
+            </span>
+          )}
+          {unblocksCount > 0 && issue.status !== 'DONE' && (
+            <span
+              style={{
+                fontSize: '10px',
+                background: '#eff6ff',
+                color: '#2563eb',
+                border: '1px solid #bfdbfe',
+                borderRadius: '4px',
+                padding: '1px 5px',
+                fontWeight: 600
+              }}
+              title={`Unblocks ${unblocksCount} downstream task(s)`}
+            >
+              🔓 Unblocks {unblocksCount}
+            </span>
           )}
         </div>
 
